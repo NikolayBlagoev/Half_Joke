@@ -2,6 +2,52 @@ from random import randrange
 from time import sleep
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageEnhance
 import math
+import tweepy
+path =''
+
+api = tweepy.API(auth)
+
+class Meme:
+    def __init__(self, path, xEmptyArea,yEmptyArea, rotEmptyArea,xFocus,yFocus, hEmpty, wEmpty, text=""):
+        self.path=path
+        self.xEmptyArea=xEmptyArea
+        self.yEmptyArea=yEmptyArea
+        self.rotEmptyArea = rotEmptyArea
+        self.xFocus=xFocus
+        self.yFocus=yFocus
+        self.hEmpty=hEmpty
+        self.wEmpty=wEmpty
+        self.text=text
+
+class TextAddition:
+    def __init__(self, topText, bottomText):
+        self.topText=topText
+        self.bottomText=bottomText
+
+def fillWithSources():
+    data=[]
+
+    img2 = Meme("Random/Linus.png", 0, 0, 0, 315, 227, 0, 0)
+    data.append(img2)
+    return data
+def fillWithTexts():
+    data=[]
+
+    txt = TextAddition("OK GOOGLE", "UNSHIT MY PANTS")
+    data.append(txt)
+
+    return data
+
+def fillWithTemplates():
+    data=[]
+
+    img1 = Meme("Templates/EducationOpensALotOfDoors.png", 540, 752, 0, 0, 0, 532, 272)
+    data.append(img1)
+
+    return data
+def fillOntTop():
+    data=[]
+    return data
 # Completely ruins an image
 def deepfry(img):
     img = img.filter(ImageFilter.SHARPEN)
@@ -81,13 +127,88 @@ def addText(img,topText="",bottomText="BOTTOMTEXT",magnify=1):
     drawTextLowerBorder(draw,img,bottomText,img.height-10)
     return img
 
-# Combines template and source
+def pasteOnTop(background,source):
+    img1 = Image.open(path + background.path,'r')           # Background image
+    img2 = Image.open(path + source.path, 'r')              # Source image
+    yRatio = background.hEmpty / img2.height
+    xRatio=background.wEmpty / img2.width
+    if yRatio<1 and xRatio<1:
+        ratio = max(xRatio, yRatio)
+    else:
+        ratio = min(xRatio, yRatio)
+    img2 = img2.resize((int(img2.width * ratio), int(img2.height * ratio)))
+    img1.paste(img2,(int(background.xEmptyArea-(img2.width/2)),int(background.yEmptyArea-(img2.height/2))))
+    return img1
 
-path =''
-img = Image.open(path+"",'r')
-img=addText(img,"")
+def pasteInside(template,source):
+    img1 = Image.open(path + template.path, 'r')  # Template image
+    img2 = Image.open(path + source.path, 'r')  # Source image
+    background = Image.new("RGB", (img1.width, img1.height), "white")
+    himg2=2*(min(source.yFocus, img2.height-source.yFocus))
+    wimg2=2*(min(source.xFocus, img2.width-source.xFocus))
+    yRatio = template.hEmpty / himg2
+    xRatio=template.wEmpty / wimg2
+    if yRatio<1 and xRatio<1:
+        ratio = max(xRatio, yRatio)
+    else:
+        ratio = min(xRatio, yRatio)
+    img2 = img2.resize((int(img2.width * ratio), int(img2.height * ratio)))
+    background.paste(img2, (int(template.xEmptyArea - source.xFocus*ratio), int(template.yEmptyArea - source.yFocus*ratio)))
+    background.paste(img1,(0,0),img1)
+    return background
 
-img.save(path+'sample-out.png')
-img.show();
+
+source= fillWithSources()
+templates=fillWithTemplates()
+putOnTop=fillOntTop()
+texts=fillWithTexts()
+
+
+
+
+
+for i in range(0,100):
+
+    c=randrange(100)
+    print(c)
+    if c in range (0,11):
+        img=source[randrange(len(source))-1]
+        add = texts[randrange(len(texts))-1]
+        img1 = Image.open(path + img.path, 'r')
+        output=addText(img1,add.topText,add.bottomText)
+        d = randrange(5)
+        if d <2:
+            print(d)
+            output=deepfry(output)
+        output.save(path+'out.png')
+        api.update_with_media(path + 'out.png', status=img.text)
+
+    elif c in range (10,46):
+        img=source[randrange(len(source))-1]
+        img2= putOnTop[randrange(len(putOnTop))-1]
+        output=pasteOnTop(img2,img)
+        d = randrange(5)
+        if d <2:
+            print(d)
+            output=deepfry(output)
+        output.save(path+'out.png')
+        api.update_with_media(path + 'out.png', status=img2.text)
+    elif c in range(45, 91):
+        img=source[randrange(len(source))-1]
+        img2= templates[randrange(len(templates))-1]
+        output=pasteInside(img2,img)
+        d = randrange(5)
+        if d <2:
+            print(d)
+            output=deepfry(output)
+        output.save(path+'out.png')
+        api.update_with_media(path + 'out.png', status=img2.text)
+    elif c in range(90,101):
+        status = api.update_status(texts[randrange(len(texts))-1].bottomText)
+
+    i = i + 1
+    sleep(600)
+
+
 
 
