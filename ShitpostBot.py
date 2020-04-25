@@ -2,6 +2,7 @@ from random import randrange
 from time import sleep
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageEnhance
 import math
+import os.path
 import tweepy
 path =''
 
@@ -49,7 +50,7 @@ def fillOntTop():
     data=[]
     return data
 # Completely ruins an image
-def deepfry(img):
+def deepfry(img: Image):
     img = img.filter(ImageFilter.SHARPEN)
     img = img.filter(ImageFilter.SHARPEN)
     img = img.filter(ImageFilter.SHARPEN)
@@ -104,6 +105,7 @@ def drawTextLowerBorder(draw,img, text,bottomy,magnify=1):
         draw.text((x - 2, y - 2), txt, font=font, fill="black")
         draw.text((x + 2, y - 2), txt, font=font, fill="black")
         draw.text((x, y), txt, (255, 255, 255), font=font)
+
 def drawTextUpperBorder(draw,img, text,top,magnify=1):
     text = splitString(text)
     lines = len(text)
@@ -132,10 +134,7 @@ def pasteOnTop(background,source):
     img2 = Image.open(path + source.path, 'r')              # Source image
     yRatio = background.hEmpty / img2.height
     xRatio=background.wEmpty / img2.width
-    if yRatio<1 and xRatio<1:
-        ratio = max(xRatio, yRatio)
-    else:
-        ratio = min(xRatio, yRatio)
+    ratio = min(xRatio, yRatio)
     img2 = img2.resize((int(img2.width * ratio), int(img2.height * ratio)))
     img1.paste(img2,(int(background.xEmptyArea-(img2.width/2)),int(background.yEmptyArea-(img2.height/2))))
     return img1
@@ -148,10 +147,11 @@ def pasteInside(template,source):
     wimg2=2*(min(source.xFocus, img2.width-source.xFocus))
     yRatio = template.hEmpty / himg2
     xRatio=template.wEmpty / wimg2
-    if yRatio<1 and xRatio<1:
+    if yRatio>1 or xRatio>1:
         ratio = max(xRatio, yRatio)
     else:
-        ratio = min(xRatio, yRatio)
+        ratio = max(xRatio, yRatio)
+    print(ratio)
     img2 = img2.resize((int(img2.width * ratio), int(img2.height * ratio)))
     background.paste(img2, (int(template.xEmptyArea - source.xFocus*ratio), int(template.yEmptyArea - source.yFocus*ratio)))
     background.paste(img1,(0,0),img1)
@@ -166,49 +166,52 @@ texts=fillWithTexts()
 
 
 
-
 for i in range(0,100):
 
     c=randrange(100)
     print(c)
-    if c in range (0,11):
-        img=source[randrange(len(source))-1]
-        add = texts[randrange(len(texts))-1]
-        img1 = Image.open(path + img.path, 'r')
-        output=addText(img1,add.topText,add.bottomText)
-        d = randrange(5)
-        if d <2:
-            print(d)
-            output=deepfry(output)
-        output.save(path+'out.png')
-        api.update_with_media(path + 'out.png', status=img.text)
+    fileOutputName="1"
+    cakdka=1
+    outputText=""
+    while os.path.isfile(path+"Product/"+fileOutputName+".png"):
+        print('About to be in here:')
+        print(cakdka)
+        if c in range (0,11):
+            img=source[randrange(len(source))-1]
+            add = texts[randrange(len(texts))-1]
+            img1 = Image.open(path + img.path, 'r')
+            output=addText(img1,add.topText,add.bottomText)
+            d = randrange(5)
+            if d <2:
+                output=deepfry(output)
+            fileOutputName=str(hash(img.path))+"T"+str(hash(add.bottomText))
+            outputText=img.text
 
-    elif c in range (10,46):
-        img=source[randrange(len(source))-1]
-        img2= putOnTop[randrange(len(putOnTop))-1]
-        output=pasteOnTop(img2,img)
-        d = randrange(5)
-        if d <2:
-            print(d)
-            output=deepfry(output)
-        output.save(path+'out.png')
-        api.update_with_media(path + 'out.png', status=img2.text)
-    elif c in range(45, 91):
-        img=source[randrange(len(source))-1]
-        img2= templates[randrange(len(templates))-1]
-        output=pasteInside(img2,img)
-        d = randrange(5)
-        if d <2:
-            print(d)
-            output=deepfry(output)
-        output.save(path+'out.png')
-        api.update_with_media(path + 'out.png', status=img2.text)
-    elif c in range(90,101):
-        status = api.update_status(texts[randrange(len(texts))-1].bottomText)
 
+        elif c in range (10,46):
+            img=source[randrange(len(source))-1]
+            img2= putOnTop[randrange(len(putOnTop))-1]
+            output=pasteOnTop(img2,img)
+            d = randrange(5)
+            if d <2:
+                output=deepfry(output)
+
+            fileOutputName = str(hash(img.path))+"s"+ str(hash(img2.path))
+            outputText = img2.text
+
+        elif c in range(45, 101):
+            img=source[randrange(len(source))-1]
+            img2= templates[randrange(len(templates))-1]
+            output=pasteInside(img2,img)
+            d = randrange(5)
+            if d <2:
+                output=deepfry(output)
+
+            fileOutputName = str(hash(img.path))+"s"+ str(hash(img2.path))
+            outputText = img2.text
+
+        cakdka+=1
+    output.save(path + 'Product/' + fileOutputName + '.png')
+    api.update_with_media(path + 'Product/' + fileOutputName + '.png', status=outputText)
     i = i + 1
-    sleep(600)
-
-
-
-
+    sleep(300)
